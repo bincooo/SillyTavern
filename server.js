@@ -33,6 +33,25 @@ util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
+const DEV = (process.env.NODE_ENV == 'development');
+const USER_HOME = process.env.HOME || process.env.USERPROFILE;
+
+// change all relative paths
+console.log(`Node version: ${process.version}. Running in ${process.env.NODE_ENV} environment.`);
+// let serverDirectory = __dirname;
+if (!DEV) {
+    const dir = path.join(USER_HOME, '.config')
+    const dirs = path.join(USER_HOME, '.config/SillyTavern')
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir)
+    }
+    if (!fs.existsSync(dirs)) {
+        fs.mkdirSync(dirs)
+        fs.linkSync(path.join(__dirname, 'config.yaml'), path.join(dirs, 'config.yaml'));
+    }
+}
+// process.chdir(serverDirectory);
+
 // local library imports
 const userModule = require('./src/users');
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
@@ -56,7 +75,6 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
 
 // Set default DNS resolution order to IPv4 first
 dns.setDefaultResultOrder('ipv4first');
-
 const DEFAULT_PORT = 8000;
 const DEFAULT_AUTORUN = false;
 const DEFAULT_LISTEN = false;
@@ -679,3 +697,7 @@ userModule.initUserStorage(dataRoot)
             );
         }
     });
+
+module.exports = {
+    server_port,
+}

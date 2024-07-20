@@ -352,6 +352,10 @@ function toAvatarKey(handle) {
  * @returns {Promise<void>}
  */
 async function initUserStorage(dataRoot) {
+    if (dataRoot.startsWith('USER_DIR/')) {
+        const USER_HOME = process.env.HOME || process.env.USERPROFILE;
+        dataRoot = USER_HOME + dataRoot.substr(8)
+    }
     DATA_ROOT = dataRoot;
     console.log('Using data root:', color.green(DATA_ROOT));
     console.log();

@@ -1,6 +1,6 @@
 # -- DATA CONFIGURATION --
 # Root directory for user data storage
-dataRoot: ./data
+dataRoot: USER_DIR/.config/SillyTavern
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
