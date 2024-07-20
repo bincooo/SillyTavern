@@ -7,6 +7,13 @@ const crypto = require('crypto');
 const yaml = require('yaml');
 const _ = require('lodash');
 
+const DEV = (process.env.NODE_ENV == 'development');
+const USER_HOME = process.env.HOME || process.env.USERPROFILE;
+
+if (!DEV) {
+    process.chdir(__dirname);
+}
+
 /**
  * Colorizes console output.
  */
