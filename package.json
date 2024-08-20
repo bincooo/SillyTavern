@@ -70,7 +70,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.12.3",
+    "version": "1.12.4",
     "scripts": {
         "help": "electron-packager -m",
         "osx:package": "electron-packager ./ launch --mac --x64 --out ./bin --icon=st.icns --extra-resource=./default",
