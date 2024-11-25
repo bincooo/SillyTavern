@@ -1,15 +1,11 @@
-const { app, net, protocol, BrowserWindow } = require('electron');
-const { pathToFileURL } = require('url');
-const path = require('path');
-const fs = require('node:fs');
-require('./post-install.js');
-const { server_port } = require('./server.js');
+import { app, protocol, BrowserWindow } from 'electron';
+import path from'path';
+import './post-install.js';
+import { server_port } from './server.js';
+import { fileURLToPath } from 'url'
 
-const apis = [
-    'csrf-token',
-    'version',
-  ]
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 function createWindow () {
   // 创建浏览器窗口
   const mainWindow = new BrowserWindow({
@@ -19,7 +15,7 @@ function createWindow () {
     height: 800,
     icon: path.join(__dirname, 'public/favicon.ico'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
     }
   })
  
@@ -70,7 +66,7 @@ function createWindow () {
   // mainWindow.loadURL('app://public/index.html');
 
   // 打开开发工具config
-  // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
 }
 
 

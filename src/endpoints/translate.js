@@ -1,14 +1,18 @@
-const fetch = require('node-fetch').default;
-const https = require('https');
-const express = require('express');
-const { readSecret, SECRET_KEYS } = require('./secrets');
-const { getConfigValue, uuidv4 } = require('../util');
-const { jsonParser } = require('../express-common');
+import https from 'node:https';
+
+import fetch from 'node-fetch';
+import express from 'express';
+import bingTranslateApi from 'bing-translate-api';
+import googleTranslateApi from 'google-translate-api-x';
+
+import { readSecret, SECRET_KEYS } from './secrets.js';
+import { getConfigValue, uuidv4 } from '../util.js';
+import { jsonParser } from '../express-common.js';
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
 
-const router = express.Router();
+export const router = express.Router();
 
 router.post('/libre', jsonParser, async (request, response) => {
     const key = readSecret(request.user.directories, SECRET_KEYS.LIBRE);
@@ -55,6 +59,7 @@ router.post('/libre', jsonParser, async (request, response) => {
             return response.sendStatus(result.status);
         }
 
+        /** @type {any} */
         const json = await result.json();
         console.log('Translated text: ' + json.translatedText);
 
@@ -67,7 +72,6 @@ router.post('/libre', jsonParser, async (request, response) => {
 
 router.post('/google', jsonParser, async (request, response) => {
     try {
-        const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
         const text = request.body.text;
         const lang = request.body.lang;
 
@@ -77,29 +81,12 @@ router.post('/google', jsonParser, async (request, response) => {
 
         console.log('Input text: ' + text);
 
-        const url = generateRequestUrl(text, { to: lang });
+        const result = await googleTranslateApi(text, { to: lang, forceBatch: false });
+        const translatedText = Array.isArray(result) ? result.map(x => x.text).join('') : result.text;
 
-        https.get(url, (resp) => {
-            let data = '';
-
-            resp.on('data', (chunk) => {
-                data += chunk;
-            });
-
-            resp.on('end', () => {
-                try {
-                    const result = normaliseResponse(JSON.parse(data));
-                    console.log('Translated text: ' + result.text);
-                    return response.send(result.text);
-                } catch (error) {
-                    console.log('Translation error', error);
-                    return response.sendStatus(500);
-                }
-            });
-        }).on('error', (err) => {
-            console.log('Translation error: ' + err.message);
-            return response.sendStatus(500);
-        });
+        response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        console.log('Translated text: ' + translatedText);
+        return response.send(translatedText);
     } catch (error) {
         console.log('Translation error', error);
         return response.sendStatus(500);
@@ -107,34 +94,33 @@ router.post('/google', jsonParser, async (request, response) => {
 });
 
 router.post('/yandex', jsonParser, async (request, response) => {
-    const chunks = request.body.chunks;
-    const lang = request.body.lang;
-
-    if (!chunks || !lang) {
-        return response.sendStatus(400);
-    }
-
-    // reconstruct original text to log
-    let inputText = '';
-
-    const params = new URLSearchParams();
-    for (const chunk of chunks) {
-        params.append('text', chunk);
-        inputText += chunk;
-    }
-    params.append('lang', lang);
-    const ucid = uuidv4().replaceAll('-', '');
-
-    console.log('Input text: ' + inputText);
-
     try {
+        const chunks = request.body.chunks;
+        const lang = request.body.lang;
+
+        if (!chunks || !lang) {
+            return response.sendStatus(400);
+        }
+
+        // reconstruct original text to log
+        let inputText = '';
+
+        const params = new URLSearchParams();
+        for (const chunk of chunks) {
+            params.append('text', chunk);
+            inputText += chunk;
+        }
+        params.append('lang', lang);
+        const ucid = uuidv4().replaceAll('-', '');
+
+        console.log('Input text: ' + inputText);
+
         const result = await fetch(`https://translate.yandex.net/api/v1/tr.json/translate?ucid=${ucid}&srv=android&format=text`, {
             method: 'POST',
             body: params,
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -143,6 +129,7 @@ router.post('/yandex', jsonParser, async (request, response) => {
             return response.sendStatus(500);
         }
 
+        /** @type {any} */
         const json = await result.json();
         const translated = json.text.join();
         console.log('Translated text: ' + translated);
@@ -240,7 +227,6 @@ router.post('/deepl', jsonParser, async (request, response) => {
                 'Authorization': `DeepL-Auth-Key ${key}`,
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -249,6 +235,7 @@ router.post('/deepl', jsonParser, async (request, response) => {
             return response.sendStatus(result.status);
         }
 
+        /** @type {any} */
         const json = await result.json();
         console.log('Translated text: ' + json.translations[0].text);
 
@@ -293,7 +280,6 @@ router.post('/onering', jsonParser, async (request, response) => {
 
         const result = await fetch(fetchUrl, {
             method: 'GET',
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -302,6 +288,7 @@ router.post('/onering', jsonParser, async (request, response) => {
             return response.sendStatus(result.status);
         }
 
+        /** @type {any} */
         const data = await result.json();
         console.log('Translated text: ' + data.result);
 
@@ -349,7 +336,6 @@ router.post('/deeplx', jsonParser, async (request, response) => {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            timeout: 0,
         });
 
         if (!result.ok) {
@@ -358,6 +344,7 @@ router.post('/deeplx', jsonParser, async (request, response) => {
             return response.sendStatus(result.status);
         }
 
+        /** @type {any} */
         const json = await result.json();
         console.log('Translated text: ' + json.data);
 
@@ -369,7 +356,6 @@ router.post('/deeplx', jsonParser, async (request, response) => {
 });
 
 router.post('/bing', jsonParser, async (request, response) => {
-    const bingTranslateApi = require('bing-translate-api');
     const text = request.body.text;
     let lang = request.body.lang;
 
@@ -391,5 +377,3 @@ router.post('/bing', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     });
 });
-
-module.exports = { router };
